@@ -1,0 +1,53 @@
+name: Free Linux RDP with Tailscale
+
+on:
+  workflow_dispatch:
+
+jobs:
+  rdp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    
+    steps:
+    - name: Install Tailscale
+      run: |
+        curl -fsSL https://tailscale.com/install.sh | sh
+        sudo tailscale up --authkey ${{ secrets.TAILSCALE_AUTH_KEY }} --hostname github-linux-rdp --accept-routes
+        sleep 10
+        echo "Tailscale Connected"
+        
+    - name: Install XFCE Desktop and xRDP
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y xfce4 xfce4-goodies xrdp
+        echo "xfce4-session" > ~/.xsession
+        sudo service xrdp start
+        echo "Linux RDP Installed"
+        
+    - name: Set Password
+      run: |
+        echo "runner:LinuxRDP#2025" | sudo chpasswd
+        echo "Password Set for user: runner"
+        
+    - name: Get Tailscale IP and Details
+      run: |
+        IP=$(tailscale ip -4)
+        echo "============================================"
+        echo "LINUX RDP CONNECTION DETAILS"
+        echo "============================================"
+        echo "IP ADDRESS: $IP"
+        echo "USERNAME: runner"
+        echo "PASSWORD: LinuxRDP#2025"
+        echo "============================================"
+        echo "IMPORTANT: Install Tailscale app on your PC/Phone"
+        echo "Login with same account, then RDP to the IP above"
+        echo "============================================"
+        
+    - name: Keep Alive
+      run: |
+        echo "Session Active - 6 hours"
+        while true; do
+          sleep 300
+          IP=$(tailscale ip -4)
+          echo "Active - IP: $IP - $(date)"
+        done
